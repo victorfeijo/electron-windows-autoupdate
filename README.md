@@ -38,6 +38,16 @@ You will also need to install mono which can be installed through homebrew.
 brew install mono
 ```
 
+You may need an older version of 'curl' to sign the app with the Windows certificates, if you are using something like Arch Linux.
+You can install it using the following:
+```
+yaourt -S libcurl-compat-nostatic
+```
+And when it proves necessary, run the command that is breaking preloading the older library, like this:
+```
+LD_PRELOAD=libcurl.so.3 theCommandHere
+```
+
 Once you are ready with this, you can install this repo:
 ```
 npm install
@@ -53,7 +63,7 @@ Such app, right? Note that version number is dynamic and will change when we upd
 Let's try to create a Windows build I prepared for you:
 ```
 npm run build
-``` 
+```
 
 Alright this fails. The reason is that I already added a line that tells `Squirrel` where it should find all my app releases in `RELEASES` file.
 
@@ -76,7 +86,7 @@ Now everything should go OK. You may have troubles with Wine. Make sure you did 
 }
 ```
 I generated dummy certificates to sign this app, if you don't provide these files, autoUpdate will not work!
-Replace these lines with your own certificate info. Guide to generate such certificates is here: [https://www.npmjs.com/package/electron-installer-windows](https://www.npmjs.com/package/electron-installer-windows) 
+Replace these lines with your own certificate info. Guide to generate such certificates is here: [https://www.npmjs.com/package/electron-installer-windows](https://www.npmjs.com/package/electron-installer-windows)
 
 So what do we have now? Well, in `dist/win` there is something like `electron-windows-autoupdate-1.0.0-full.nupkg` which is a packed binary.
 Along with `electron-windows-autoupdate Setup 1.0.0` which is Windows installer of our App. Great.
@@ -100,6 +110,8 @@ Then just:
 ```
 // start server here
 python -m SimpleHTTPServer 9000
+// or
+python2.7 -m SimpleHTTPServer 9000
 
 // or just
 npm run start:server
@@ -110,6 +122,12 @@ So now if you do:
 open http://localhost:9000/dist/win1/RELEASES
 ```
 It should open `RELEASES` in the browser, maybe it downloads it. Anyway everything but `404` is OK.
+
+If you are trying to access this address on a VirtualBox VM, while hosting the server on the outer/host environment, it will not be directly accessible.
+But you can access your outer/host machine with the IP address '10.0.2.2', so the following address should work, on the inner/guest machine:
+```
+http://10.0.2.2:9000/dist/win1/RELEASES
+```
 
 So now we have to tell `Squirrel` that we already have some versions of our app built and we want another version to be an update of older ones.
 
@@ -152,7 +170,7 @@ A94689C1884E9ED50963BFF58ED974AA4D17EEA1 electron-windows-autoupdate-2.0.0-full.
 If there is just one line, it means that you did not bump version in `package.json`.
 
 If you have 3 lines, than great, `Squirrel` noticed previous version and created `*-delta.nupkg`
-which holds difference between older version and current. There is also a note about `*-full.nupkg` which is package binary of the 
+which holds difference between older version and current. There is also a note about `*-full.nupkg` which is package binary of the
 next version of your app that you just built.
 
 So now all the update files are prepared we may implement app code that will implement auto update in the app.
@@ -170,6 +188,9 @@ Things to notice are:
 ### Setting auto update feed URL
 Note this line `autoUpdater.setFeedURL('http://localhost:9000/dist/win/')`. AutoUpdater uses `Squirrel` in the background,
 so it requires URL to folder where all the required files are located. These files are familiar `*-full/delta.nupkg` and `RELEASES`.
+
+Again, if using a VirtualBox VM, change the setFeedURL line to `autoUpdater.setFeedURL('http://10.0.2.2:9000/dist/win/')`.
+Because this is the address the inner/guest machine will be pinging to check for updates, it needs to point to the server running on the outer/host machine.
 
 But this time, this url **must poin to folder where update files are located**.
 
@@ -209,4 +230,3 @@ Code sign was not applied, take a look here how to generate one: [https://www.np
 
 ## Other question?
 Just ask! team@avocode.com!
-
